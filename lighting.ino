@@ -30,6 +30,9 @@ typedef unsigned char byte;
 
 PersistentData pData;
 Display virtualDisp;
+int sixrandoms[30];
+int average;
+byte nRandoms;
 
 HomeScreen hs(&pData);
 MenuScreen ms(&pData);
@@ -120,8 +123,36 @@ void UpdateTime() {
                 
         }
         // update values on a per minute basis
-        pData.analogValue = pgm_read_word_near(&analogData[pData.day][pData.hour][pData.minute]);
-    } 
+        //pData.analogValue = pgm_read_word_near(&analogData[pData.day][pData.hour][pData.minute]);
+    }
+    average = 0;
+    word outputValue = pgm_read_word_near(&analogData[pData.day][pData.hour][pData.minute]);
+    if ((outputValue > 3600) && (outputValue < 4064))
+      nRandoms = 10;
+      else nRandoms = 20;
+      
+    sixrandoms[0] = 0;
+    for (byte i = 1; i < nRandoms; i++) {
+      sixrandoms[i] = random(-1500, 800);
+      while((sixrandoms[i] - sixrandoms[i-1] < 192) && (sixrandoms[i] - sixrandoms[i-1] > -384) ) {
+        sixrandoms[i] = random(-1500, 800);
+      }      
+      average += sixrandoms[i];
+    }
+    average /= (nRandoms-1);
+    for (byte i = 1; i < nRandoms; i++) {
+      sixrandoms[i] -= average;
+    }
+   
+    
+    for (byte i = 0; i < nRandoms; i++) {
+      if (pData.second == i * (60/nRandoms) ) {
+        int test = outputValue + sixrandoms[i];
+        if (test < 0) test = 0;
+        if (test > 4064) test = 4064;
+        pData.analogValue = (word)test;
+      }
+    }
     // update values on a per second basis
     SetOutput();
     HandleInput(INPUT_TICK);
